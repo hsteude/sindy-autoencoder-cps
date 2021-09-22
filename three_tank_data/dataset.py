@@ -8,37 +8,24 @@ from three_tank_data.data_gen import ThreeTankDataGenerator
 class ThreeTankDataSet(Dataset):
     """Write me!"""
 
-    def __init__(self, number_initial_states=100,
-                 number_timesteps=101, t_max=10,
-                 q1=0, q3=0, A=10, g=9.81, latent_dim=3):
-        ttdg = ThreeTankDataGenerator(
-            number_initial_states=number_initial_states,
-            number_timesteps=number_timesteps,
-            t_max=t_max,
-            q1=q1, q3=q3, A=A, g=g,
-            latent_dim=latent_dim)
-
-        self.x, self.x_dot, self.time, self.uid_initial_state \
-            = ttdg.generate_x_space_data()
+    def __init__(self):
+        self.df = pd.read_hdf(const.X_SPACE_DATA_PATH)
 
     def __len__(self):
         """Size of dataset
         """
-        return self.x.shape[0]
+        return len(self.df)
 
     def __getitem__(self, index):
         """Get one sample"""
-        TOOOOOODOOOOOOOOOOOO, hier war ich gestern
-        out = self.df_data[self.df_data.sample_idx == index][['signal_1', 'signal_2']]\
-            .values.astype(np.float32)
-        return out, index
+        x = self.df[const.X_COL_NAMES].values[index, :]
+        xdot = self.df[const.XDOT_COL_NAMES].values[index, :]
+        return x, xdot, index
 
 
 if __name__ == '__main__':
     # test for lets have a look
-    dataset = SimpleRandomCurvesDataset(data_path=const.DATA_PATH,
-                                        hidden_states_path=const.HIDDEN_STATE_PATH)
+    dataset = ThreeTankDataSet()
     idx = 10
-    ts = dataset[idx]
+    x, xdot, idx = dataset[idx]
     breakpoint()
-    print(type(ts))
