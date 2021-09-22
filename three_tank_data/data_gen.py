@@ -11,11 +11,10 @@ np.random.seed(62654)
 
 class ThreeTankDataGenerator():
 
-    def __init__(self, observation_space='z', number_initial_states=2,
+    def __init__(self, number_initial_states=2,
                  number_timesteps=const.NUMBER_TIMESTEPS, t_max=const.T_MAX,
                  q1=const.Q1, q3=const.Q3, A=const.A, g=const.G, latent_dim=const.LATENT_DIM,
                  derivatives=False):
-        self.observation_space=observation_space
         self.t_max = t_max
         self.number_timesteps = number_timesteps
         self.q1 = q1
@@ -39,7 +38,9 @@ class ThreeTankDataGenerator():
 
 
     def get_random_inition_states(self, N):
-        initial_states = np.array(np.random.uniform(low=1, high=100, size=N*self.latent_dim))
+        initial_states = np.array(np.random.uniform(low=const.INITIAL_LEVEL_MIN,
+                                                    high=const.INITIAL_LEVEL_MAX,
+                                                    size=N*self.latent_dim))
         return initial_states.reshape(N, self.latent_dim)
 
     def solve_ode(self, initial_state):
@@ -47,19 +48,14 @@ class ThreeTankDataGenerator():
 
     def compute_derivatives(self, x, dt):
         """
-        First order forward difference (centered difference)
+        First order forward difference (forward difference)
         TODO: Find out how the pysindy authors, came up with the formula for the start and end points
         """
         # Uniform timestep (assume t contains dt)
         x_dot = np.full_like(x, fill_value=np.nan)
         if np.isscalar(dt):
-            # noraml points
-            x_dot[1:-1, :] = (x[2:, :] - x[:-2, :]) / (2 * dt)
-            # start point
-            x_dot[0, :] = (-11 / 6 * x[0, :] + 3 * x[1, :] - 3 / 2 * x[2, :] + x[3, :] / 3) / dt
-            # end point
-            x_dot[-1, :] = (11 / 6 * x[-1, :] - 3 * x[-2, :] + 3 / 2 * x[-3, :] - x[-4, :] / 3) / dt
-
+            x_dot[:-1, :] = (x[1:, :] - x[:-1, :]) / dt
+            x_dot[-1, :] = (3 * x[-1, :] / 2 - 2 * x[-2, :] + x[-3, :] / 2) / dt 
         return x_dot
 
     def generate_z_space_data(self):
@@ -77,7 +73,6 @@ class ThreeTankDataGenerator():
         return z, z_dot, time, uid_initial_state
 
     def generate_x_space_data(self):
-        breakpoint()
         x = np.zeros((self.number_timesteps * self.number_initial_states, const.PICTURE_SIZE**2))
         x_dot = np.zeros((self.number_timesteps * self.number_initial_states, const.PICTURE_SIZE**2))
         time = np.array(list(self.t)*self.number_initial_states)
@@ -112,14 +107,20 @@ class TankPictureCreator():
     def create_matrix(self, levels):
         levels_pic = np.zeros((self.picture_dim, self.picture_dim))
         for h1 in range(self.picture_dim):
-            if h1 <= levels[0]:
+            if h1 < levels[0]:
                 levels_pic[self.picture_dim-1-h1, self.h1_x_range[0]:self.h1_x_range[1]] = 1
+            elif h1 > levels[0] and h1 < levels[0]+1:
+                levels_pic[self.picture_dim-1-h1, self.h1_x_range[0]:self.h1_x_range[1]] = 1-(h1 - levels[0])
         for h2 in range(self.picture_dim):
-            if h2 <= levels[1]:
+            if h2 < levels[1]:
                 levels_pic[self.picture_dim-1-h2, self.h2_x_range[0]:self.h2_x_range[1]] = 1
+            elif h2 > levels[1] and h1 < levels[1]+1:
+                levels_pic[self.picture_dim-1-h2, self.h2_x_range[0]:self.h2_x_range[1]] = 1-(h2 - levels[1])
         for h3 in range(self.picture_dim):
-            if h3 <= levels[2]:
+            if h3 < levels[2]:
                 levels_pic[self.picture_dim-1-h3, self.h3_x_range[0]:self.h3_x_range[1]] = 1
+            elif h3 > levels[2] and h1 < levels[2]+1:
+                levels_pic[self.picture_dim-1-h3, self.h3_x_range[0]:self.h3_x_range[1]] = 1-(h3 - levels[2])
 
         return levels_pic
     
@@ -134,8 +135,7 @@ class TankPictureCreator():
 
 
 if __name__ == '__main__':
-    breakpoint()
     ttdg = ThreeTankDataGenerator()
-    z, z_dot, time, uid_initial_state = ttdg.generate_x_space_data()
+    x, x_dot, time, uid_initial_state = ttdg.generate_x_space_data()
 
 
