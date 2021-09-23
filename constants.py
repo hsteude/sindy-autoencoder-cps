@@ -23,9 +23,10 @@ TIME_COL_NAME = 'time'
 UID_INITIAL_STATE_COL_NAME = 'uid_initial_state'
 
 #path
-X_SPACE_DATA_PATH = 'data/processed/x_space_data.h5'
-Z_SPACE_DATA_PATH = 'data/processed/z_space_data.h5'
+X_SPACE_DATA_PATH = 'data/processed/x_space_data.parquet'
+Z_SPACE_DATA_PATH = 'data/processed/z_space_data.parquet'
 X_COL_NAMES = [f'x_{i}' for i in range(PICTURE_SIZE**2)]
 XDOT_COL_NAMES = [f'xdot_{i}' for i in range(PICTURE_SIZE**2)]
 
+SEED = 12354
 

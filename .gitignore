@@ -88,3 +88,5 @@ target/
 # exclude data dir
 data/processed/*
 !data/processed/.gitkeep
+
+lightning_logs/*

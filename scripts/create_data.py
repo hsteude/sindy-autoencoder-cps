@@ -16,7 +16,7 @@ def main():
     df = pd.concat((df_x, df_xdot), axis=1)
     df[const.TIME_COL_NAME] = time
     df[const.UID_INITIAL_STATE_COL_NAME] = uid_initial_state
-    df.to_hdf( const.X_SPACE_DATA_PATH, 'x_space_data')
+    df.to_parquet(const.X_SPACE_DATA_PATH)
 
 
     z, z_dot, time, uid_initial_state = ttdg.generate_z_space_data()
@@ -24,7 +24,7 @@ def main():
     df_z_space[const.Z_DOT_COL_NAMES] = z_dot
     df_z_space[const.TIME_COL_NAME] = time
     df_z_space[const.UID_INITIAL_STATE_COL_NAME] = uid_initial_state
-    df_z_space.to_hdf( const.Z_SPACE_DATA_PATH, 'z_space_data')
+    df_z_space.to_parquet( const.Z_SPACE_DATA_PATH)
 
 
 if __name__ == '__main__':

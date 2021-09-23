@@ -31,21 +31,21 @@ class ThreeTankDataModule(pl.LightningDataModule):
         return DataLoader(self.dataset_train,
                           batch_size=self.batch_size,
                           num_workers=self.dl_num_workers,
-                          pin_memory=False)
+                          pin_memory=True)
 
     def val_dataloader(self):
         return DataLoader(self.dataset_val,
                           batch_size=self.batch_size,
                           num_workers=self.dl_num_workers,
-                          pin_memory=False)
+                          pin_memory=True)
 
 
 if __name__ == '__main__':
     # quick and dirty test
     hparams = dict(
         validdation_split=.1,
-        batch_size=10,
-        dl_num_workers=6
+        batch_size=10000,
+        dl_num_workers=0
     )
     ttdm = ThreeTankDataModule(**hparams)
     ttdm.setup()

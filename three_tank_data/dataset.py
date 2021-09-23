@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
+import torch
 import constants as const
 from three_tank_data.data_gen import ThreeTankDataGenerator
 
@@ -9,18 +10,18 @@ class ThreeTankDataSet(Dataset):
     """Write me!"""
 
     def __init__(self):
-        self.df = pd.read_hdf(const.X_SPACE_DATA_PATH)
+        self.df = pd.read_parquet(const.X_SPACE_DATA_PATH)
+        self.x = torch.from_numpy(self.df[const.X_COL_NAMES].values.astype(np.float32))
+        self.xdot = torch.from_numpy(self.df[const.XDOT_COL_NAMES].values.astype(np.float32))
 
     def __len__(self):
         """Size of dataset
         """
-        return len(self.df)
+        return self.x.shape[0] 
 
     def __getitem__(self, index):
         """Get one sample"""
-        x = self.df[const.X_COL_NAMES].values[index, :]
-        xdot = self.df[const.XDOT_COL_NAMES].values[index, :]
-        return x, xdot, index
+        return self.x[index, :], self.xdot[index, :], index 
 
 
 if __name__ == '__main__':
