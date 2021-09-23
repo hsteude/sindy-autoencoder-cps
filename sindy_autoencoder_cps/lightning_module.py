@@ -4,6 +4,9 @@ import pytorch_lightning as pl
 pl.seed_everything(12354)
 
 
+
+
+
 class Encoder(nn.Module):
     def __init__(self, input_dim=10000, hidden_size=10000, enc_out_dim=3, *args, **kwargs):
         super(Encoder, self).__init__()
