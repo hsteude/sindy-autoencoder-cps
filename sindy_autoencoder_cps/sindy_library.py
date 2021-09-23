@@ -2,7 +2,8 @@ import torch
 import itertools
 
 class SINDyLibrary():
-    def __init__(self, latent_dim=3,
+    def __init__(self,
+                 latent_dim=3,
                  include_biases=True,
                  include_sin=True,
                  include_cos=True,
@@ -30,11 +31,12 @@ class SINDyLibrary():
 
         # fit for functions and feature names
         self.fit()
+        self.number_candidate_functions = len(self.feature_names)
         
 
     @staticmethod
     def biases(z):
-        return torch.ones(z.shape[0], 1)
+        return torch.ones(z.shape[0], 1, device='cuda:0')
 
     @staticmethod
     def states(z):
@@ -141,7 +143,6 @@ class SINDyLibrary():
     def transform(self, z):
         theta = [cand_func(z) for cand_func in self.candidate_functions]
         out =  torch.cat(theta, axis=1)
-        breakpoint()
         return out
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import pytorch_lightning as pl
+from sindy_autoencoder_cps.sindy_library import SINDyLibrary
 pl.seed_everything(12354)
 
 
@@ -38,7 +39,7 @@ class Decoder(nn.Module):
 
 class SINDyAutoencoder(pl.LightningModule):
     def __init__(self, learning_rate=.001, network_hidden_size=10000, input_dim=10000, 
-                 latent_dim=3, number_candidate_functions=10, *args, **kwargs):
+                 latent_dim=3, *args, **kwargs):
         super().__init__()
         self.learning_rate = learning_rate
         self.save_hyperparameters()
@@ -48,8 +49,18 @@ class SINDyAutoencoder(pl.LightningModule):
         self.psi_z = Decoder(input_dim=latent_dim,
                              hidden_size=network_hidden_size,
                              dec_output_dim=input_dim)
-        self.XI = torch.zeros(number_candidate_functions, input_dim) 
+        self.SINDyLibrary = SINDyLibrary(
+                 latent_dim=3,
+                 include_biases=True,
+                 include_sin=True,
+                 include_cos=True,
+                 include_multiply_pairs=True,
+                 poly_order=2,
+                 include_sqrt=False,
+                 include_inverse=False,
+                 include_sign_sqrt_of_diff=True)
 
+        self.XI = nn.Parameter(torch.zeros(self.SINDyLibrary.number_candidate_functions, latent_dim))
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -67,6 +78,8 @@ class SINDyAutoencoder(pl.LightningModule):
     def _shared_eval(self, x):
         z = self.phi_x(x)
         x_hat = self.psi_z(z)
+        theta = self.SINDyLibrary.transform(z)
+        z_pred = torch.matmul(theta, self.XI)
         loss = self.loss_function(x, x_hat) 
         return loss
 
