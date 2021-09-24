@@ -11,8 +11,10 @@ class SINDyLibrary():
                  poly_order=2,
                  include_sqrt=True,
                  include_inverse=True,
-                 include_sign_sqrt_of_diff=True):
+                 include_sign_sqrt_of_diff=True,
+                 device='cuda:0'):
 
+        self.device = device
         self.candidate_functions = []
         self.feature_names = []
         # initialize lib with biasses 
@@ -34,9 +36,8 @@ class SINDyLibrary():
         self.number_candidate_functions = len(self.feature_names)
         
 
-    @staticmethod
-    def biases(z):
-        return torch.ones(z.shape[0], 1, device='cuda:0')
+    def biases(self, z):
+        return torch.ones(z.shape[0], 1, device=self.device)
 
     @staticmethod
     def states(z):

@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 
 
 HPARAMS = dict(
-    learning_rate=.001,
+    learning_rate=.0005,
     network_hidden_size=100,
     input_dim=10000, 
     latent_dim=3,

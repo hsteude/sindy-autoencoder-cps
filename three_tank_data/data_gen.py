@@ -114,12 +114,12 @@ class TankPictureCreator():
         for h2 in range(self.picture_dim):
             if h2 < levels[1]:
                 levels_pic[self.picture_dim-1-h2, self.h2_x_range[0]:self.h2_x_range[1]] = 1
-            elif h2 > levels[1] and h1 < levels[1]+1:
+            elif h2 > levels[1] and h2 < levels[1]+1:
                 levels_pic[self.picture_dim-1-h2, self.h2_x_range[0]:self.h2_x_range[1]] = 1-(h2 - levels[1])
         for h3 in range(self.picture_dim):
             if h3 < levels[2]:
                 levels_pic[self.picture_dim-1-h3, self.h3_x_range[0]:self.h3_x_range[1]] = 1
-            elif h3 > levels[2] and h1 < levels[2]+1:
+            elif h3 > levels[2] and h3 < levels[2]+1:
                 levels_pic[self.picture_dim-1-h3, self.h3_x_range[0]:self.h3_x_range[1]] = 1-(h3 - levels[2])
 
         return levels_pic
