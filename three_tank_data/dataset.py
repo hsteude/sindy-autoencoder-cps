@@ -9,10 +9,12 @@ from three_tank_data.data_gen import ThreeTankDataGenerator
 class ThreeTankDataSet(Dataset):
     """Write me!"""
 
-    def __init__(self):
-        self.df = pd.read_parquet(const.X_SPACE_DATA_PATH)
+    def __init__(self, debug=False):
+        path = const.X_SPACE_DATA_PATH_DEBUGGING if debug else const.X_SPACE_DATA_PATH
+        self.df = pd.read_parquet(path)
         self.x = torch.from_numpy(self.df[const.X_COL_NAMES].values.astype(np.float32))
         self.xdot = torch.from_numpy(self.df[const.XDOT_COL_NAMES].values.astype(np.float32))
+
 
     def __len__(self):
         """Size of dataset

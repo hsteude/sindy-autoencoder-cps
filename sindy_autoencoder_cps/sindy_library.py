@@ -5,6 +5,7 @@ class SINDyLibrary():
     def __init__(self,
                  latent_dim=3,
                  include_biases=True,
+                 include_states=True,
                  include_sin=True,
                  include_cos=True,
                  include_multiply_pairs=True,
@@ -21,7 +22,7 @@ class SINDyLibrary():
         self.latent_dim = latent_dim
 
         self.include_biases = include_biases
-        self.include_states = True
+        self.include_states = include_states
         self.include_sin = include_sin
         self.include_cos = include_cos
         self.include_multiply_pairs=include_multiply_pairs
@@ -29,7 +30,7 @@ class SINDyLibrary():
         self.poly_order = poly_order
         self.include_sqrt = include_sqrt
         self.include_singn_sqrt_of_diff = include_sign_sqrt_of_diff
-        assert poly_order==2, 'not implemented yet'
+        # assert poly_order==2, 'not implemented yet'
 
         # fit for functions and feature names
         self.fit()
@@ -79,7 +80,7 @@ class SINDyLibrary():
 
     def sing_sqrt_diff_pairs(self, z):
         result = []
-        for idx1, idx2 in self.idx_combis_non_commutative:
+        for idx1, idx2 in self.idx_combis_commutative:
             res = torch.sign(z[:, idx1] - z[:,idx2])*torch.sqrt(torch.abs(z[:, idx1] - z[:,idx2]))
             res = res.reshape(-1, 1)
             result.append(res)
@@ -134,11 +135,8 @@ class SINDyLibrary():
         if self.include_singn_sqrt_of_diff:
             self.candidate_functions.append(self.sing_sqrt_diff_pairs)
             names = [f'sign(z{idx1}-z{idx2})*sqrt(|z{idx1}-z{idx2}|)'
-                     for idx1, idx2 in self.idx_combis_non_commutative]
+                     for idx1, idx2 in self.idx_combis_commutative]
             self.feature_names.extend(names)
-
-
-
 
 
     def transform(self, z):

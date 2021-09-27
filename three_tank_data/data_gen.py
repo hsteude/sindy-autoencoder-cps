@@ -73,6 +73,7 @@ class ThreeTankDataGenerator():
         return z, z_dot, time, uid_initial_state
 
     def generate_x_space_data(self):
+        z = np.zeros((self.number_timesteps * self.number_initial_states, self.latent_dim))
         x = np.zeros((self.number_timesteps * self.number_initial_states, const.PICTURE_SIZE**2))
         x_dot = np.zeros((self.number_timesteps * self.number_initial_states, const.PICTURE_SIZE**2))
         time = np.array(list(self.t)*self.number_initial_states)
@@ -90,9 +91,10 @@ class ThreeTankDataGenerator():
             x_dot_i =  self.compute_derivatives(x_i, dt=self.t_max / (self.number_timesteps - 1))
             start_idx = i*self.number_timesteps
             end_idx = i*self.number_timesteps+self.number_timesteps
+            z[start_idx:end_idx, :] = z_i
             x[start_idx:end_idx, :] = x_i
             x_dot[start_idx:end_idx, :] = x_dot_i
-        return x, x_dot, time, uid_initial_state
+        return x, x_dot, z, time, uid_initial_state
 
 
 class TankPictureCreator():
