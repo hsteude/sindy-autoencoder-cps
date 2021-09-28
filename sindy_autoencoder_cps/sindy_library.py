@@ -30,7 +30,6 @@ class SINDyLibrary():
         self.poly_order = poly_order
         self.include_sqrt = include_sqrt
         self.include_singn_sqrt_of_diff = include_sign_sqrt_of_diff
-        # assert poly_order==2, 'not implemented yet'
 
         # fit for functions and feature names
         self.fit()
@@ -142,6 +141,8 @@ class SINDyLibrary():
     def transform(self, z):
         theta = [cand_func(z) for cand_func in self.candidate_functions]
         out =  torch.cat(theta, axis=1)
+        if any(torch.isnan(out.ravel())):
+            breakpoint()
         return out
 
 if __name__ == '__main__':

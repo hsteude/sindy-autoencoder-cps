@@ -9,48 +9,62 @@ pl.seed_everything(12354)
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_dim=10000, hidden_size=10000, enc_out_dim=3, activation=nn.ReLU(), *args, **kwargs):
+    def __init__(self, input_dim=10000, hidden_sizes=[2048, 512, 128, 64],
+                 enc_out_dim=3, activation=nn.ReLU(), *args, **kwargs):
         super(Encoder, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, enc_out_dim)
+        self.fc1 = nn.Linear(input_dim, hidden_sizes[0])
+        self.fc2 = nn.Linear(hidden_sizes[0], hidden_sizes[1])
+        self.fc3 = nn.Linear(hidden_sizes[1], hidden_sizes[2])
+        self.fc4 = nn.Linear(hidden_sizes[2], hidden_sizes[3])
+        self.fc5 = nn.Linear(hidden_sizes[3], enc_out_dim)
         self.activation = activation
 
     def forward(self, x):
         out = self.activation(self.fc1(x))
         out = self.activation(self.fc2(out))
-        out = self.fc3(out)
+        out = self.activation(self.fc3(out))
+        out = self.activation(self.fc4(out))
+        out = self.fc5(out)
         return out
 
 class Decoder(nn.Module):
-    def __init__(self, input_dim=3, hidden_size=10000, dec_output_dim=10000, activation=nn.ReLU(), *args, **kwargs):
+    def __init__(self, input_dim=3, hidden_sizes=[64, 128, 512, 2048],
+                 dec_output_dim=10000, activation=nn.ReLU(), *args, **kwargs):
         super(Decoder, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, dec_output_dim)
+        self.fc1 = nn.Linear(input_dim, hidden_sizes[0])
+        self.fc2 = nn.Linear(hidden_sizes[0], hidden_sizes[1])
+        self.fc3 = nn.Linear(hidden_sizes[1], hidden_sizes[2])
+        self.fc4 = nn.Linear(hidden_sizes[2], hidden_sizes[3])
+        self.fc5 = nn.Linear(hidden_sizes[3], dec_output_dim)
         self.activation = activation
 
     def forward(self, x):
         out = self.activation(self.fc1(x))
         out = self.activation(self.fc2(out))
-        out = self.fc3(out)
+        out = self.activation(self.fc3(out))
+        out = self.activation(self.fc4(out))
+        out = self.fc5(out)
         return out
 
 
 class SINDyAutoencoder(pl.LightningModule):
-    def __init__(self, learning_rate=.001, network_hidden_size=10000, input_dim=10000, 
+    def __init__(self, learning_rate=.001, input_dim=10000, 
                  latent_dim=3,
                  activation='relu',
+                 enc_hidden_sizes=[2048, 512, 128, 64],
+                 dec_hidden_sizes=[64, 128, 512, 2048],
                  sindy_biases=True,
-                 sindy_states=True,
+                 sindy_states=False,
                  sindy_sin=False,
                  sindy_cos=False,
                  sindy_multiply_pairs=True,
-                 sindy_poly_order=2,
+                 sindy_poly_order=3,
                  sindy_sqrt=False,
                  sindy_inverse=False,
                  sindy_sign_sqrt_of_diff=True,
                  sequential_thresholding=True,
+                 sequential_thresholding_freq = 10,
+                 sequential_thresholding_thres = 1e-4,
                  loss_weight_sindy_x = 1,
                  loss_weight_sindy_z = 1,
                  loss_weight_sindy_regularization = 1,
@@ -70,11 +84,11 @@ class SINDyAutoencoder(pl.LightningModule):
             print('nooooo!')
 
         self.phi_x = Encoder(input_dim=input_dim,
-                             hidden_size=network_hidden_size,
+                             hidden_sizes=enc_hidden_sizes,
                              enc_out_dim=latent_dim,
                              activation=self.activation_function)
         self.psi_z = Decoder(input_dim=latent_dim,
-                             hidden_size=network_hidden_size,
+                             hidden_sizes=dec_hidden_sizes,
                              dec_output_dim=input_dim,
                              activation=self.activation_function)
         self.SINDyLibrary = SINDyLibrary(
@@ -94,7 +108,11 @@ class SINDyAutoencoder(pl.LightningModule):
         self.XI = nn.Parameter(torch.full((self.SINDyLibrary.number_candidate_functions, latent_dim), .1))
 
         self.sequential_thresholding = sequential_thresholding
-        self.XI_coefficient_mask = torch.ones((self.SINDyLibrary.number_candidate_functions, latent_dim))
+        self.sequential_thresholding_freq = sequential_thresholding_freq
+        self.sequential_thresholding_thres = sequential_thresholding_thres
+        # TODO: here we got a device mess!
+        self.XI_coefficient_mask = torch.ones((self.SINDyLibrary.number_candidate_functions, latent_dim),
+                                              device='cuda:0')
 
         self.loss_weight_sindy_x = loss_weight_sindy_x
         self.loss_weight_sindy_z = loss_weight_sindy_z
@@ -142,16 +160,21 @@ class SINDyAutoencoder(pl.LightningModule):
         z = self.phi_x(x)
         x_hat = self.psi_z(z)
         theta = self.SINDyLibrary.transform(z)
-        zdot_hat = torch.matmul(theta, self.XI)
+        if self.sequential_thresholding:
+            zdot_hat = torch.matmul(theta, self.XI_coefficient_mask * self.XI)
+        else:
+            zdot_hat = torch.matmul(theta, self.XI)
         phi_x_parameters = list(self.phi_x.parameters())
         phi_x_weight_list = [w for w in phi_x_parameters if len(w.shape) == 2]
         phi_x_biases_list = [b for b in phi_x_parameters if len(b.shape) == 1] 
-        zdot = self.compute_nn_derivates_wrt_time(x, xdot, phi_x_weight_list, phi_x_biases_list, activation=self.activation_function_str)
+        zdot = self.compute_nn_derivates_wrt_time(x, xdot, phi_x_weight_list, phi_x_biases_list,
+                                                  activation=self.activation_function_str)
         psi_z_parameters = list(self.psi_z.parameters())
         psi_z_weight_list = [w for w in psi_z_parameters if len(w.shape) == 2]
         psi_z_biases_list = [b for b in psi_z_parameters if len(b.shape) == 1] 
-        xdot_hat = self.compute_nn_derivates_wrt_time(z, zdot, psi_z_weight_list, psi_z_biases_list, activation=self.activation_function_str) 
-        return x_hat, xdot_hat, z, zdot, zdot_hat  
+        xdot_hat = self.compute_nn_derivates_wrt_time(z, zdot_hat, psi_z_weight_list, psi_z_biases_list,
+                                                      activation=self.activation_function_str) 
+        return x_hat, xdot_hat, z, zdot, zdot_hat
 
 
     def training_step(self, batch, batch_idx):
