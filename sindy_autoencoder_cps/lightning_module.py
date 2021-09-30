@@ -21,13 +21,13 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         out = self.activation(self.fc1(x))
-        out1 = self.activation(self.fc2(out))
-        out2 = self.activation(self.fc3(out1))
-        out3 = self.activation(self.fc4(out2))
-        out4 = self.fc5(out3)
-        if any(torch.isnan(out4.ravel())):
+        out = self.activation(self.fc2(out))
+        out = self.activation(self.fc3(out))
+        out = self.activation(self.fc4(out))
+        out = self.fc5(out)
+        if any(torch.isnan(out.ravel())):
             breakpoint()
-        return out4
+        return out
 
 class Decoder(nn.Module):
     def __init__(self, input_dim=3, hidden_sizes=[64, 128, 512, 2048],
