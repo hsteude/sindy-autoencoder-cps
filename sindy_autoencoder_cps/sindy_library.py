@@ -141,8 +141,6 @@ class SINDyLibrary():
     def transform(self, z):
         theta = [cand_func(z) for cand_func in self.candidate_functions]
         out =  torch.cat(theta, axis=1)
-        if any(torch.isnan(out.ravel())):
-            breakpoint()
         return out
 
 if __name__ == '__main__':
