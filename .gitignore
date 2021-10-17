@@ -90,3 +90,4 @@ data/processed/*
 !data/processed/.gitkeep
 
 lightning_logs/*
+pics/*

@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 import torch
-import constants as const
-from sklearn.preprocessing import StandardScaler
+import examples.three_tank_system.constants as const
 
 
 class ThreeTankImgDataSet(Dataset):
@@ -48,6 +47,7 @@ class ThreeTankBaseDataSet(Dataset):
         return self.x[index, :], self.xdot[index, :], index 
 
 if __name__ == '__main__':
+    breakpoint()
     # test for lets have a look
     dataset = ThreeTankBaseDataSet()
     idx = 10

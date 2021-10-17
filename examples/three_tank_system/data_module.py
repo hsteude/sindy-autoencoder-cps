@@ -1,7 +1,6 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from three_tank_data.dataset import ThreeTankImgDataSet, ThreeTankBaseDataSet
-
+from examples.three_tank_system.dataset import ThreeTankImgDataSet, ThreeTankBaseDataSet
 import numpy as np
 import torch
 from torch.utils.data import DataLoader

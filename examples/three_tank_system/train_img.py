@@ -1,4 +1,4 @@
-from three_tank_data.data_module import ThreeTankDataModule
+from examples.three_tank_system.data_module import ThreeTankDataModule
 from sindy_autoencoder_cps.lightning_module import SINDyAutoencoder
 import torch
 import pytorch_lightning as pl
@@ -7,33 +7,31 @@ from sindy_autoencoder_cps.callbacks import SequentialThresholdingCallback
 
 HPARAMS = dict(
     learning_rate=1e-4,
-    network_hidden_size=1000,
     input_dim=10000, 
     latent_dim=3,
-    enc_hidden_sizes=[1028, 512, 128, 64],
-    dec_hidden_sizes=[64, 128, 512, 1028],
+    enc_hidden_sizes=[512, 128, 64, 32],
+    dec_hidden_sizes=[33, 64, 128, 512],
     activation='tanh',
     debug=False,
-    number_candidate_functions=10,
     validdation_split=.1,
     batch_size=32,
     dl_num_workers=24,
     max_epochs=10_000,
-    sindy_biases=False,
-    sindy_states=False,
-    sindy_sin=False,
-    sindy_cos=False,
-    sindy_multiply_pairs=False,
+    sindy_biases=True,
+    sindy_states=True,
+    sindy_sin=True,
+    sindy_cos=True,
+    sindy_multiply_pairs=True,
     sindy_poly_order=3,
     sindy_sqrt=False,
     sindy_inverse=False,
     sindy_sign_sqrt_of_diff=True,
-    sequential_thresholding=True,
-    sequential_thresholding_freq = 10,
-    sequential_thresholding_thres = 0.01,
-    loss_weight_sindy_x=1e-3,
-    loss_weight_sindy_z=1e-5,
-    loss_weight_sindy_regularization=1e-5,
+    sequential_thresholding=False,
+    sequential_thresholding_freq = 50,
+    sequential_thresholding_thres = 0.05,
+    loss_weight_sindy_x=5,
+    loss_weight_sindy_z=5e-2,
+    loss_weight_sindy_regularization=5e-5,
 )
 
 def train():
@@ -42,7 +40,8 @@ def train():
         gradient_clip_val=0.1,
         gpus=gpus,
         max_epochs=10_000,
-        stochastic_weight_avg=True,
+        precision=64,
+        # stochastic_weight_avg=True,
         callbacks=[SequentialThresholdingCallback()])
     model = SINDyAutoencoder(**HPARAMS)
     dm = ThreeTankDataModule(validdation_split=HPARAMS['validdation_split'],

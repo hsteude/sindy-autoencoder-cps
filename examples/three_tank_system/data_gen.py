@@ -3,7 +3,7 @@
 """
 import numpy as np
 from scipy.integrate import odeint
-import constants as const
+import examples.three_tank_system.constants as const
 from scipy.ndimage import gaussian_filter
 
 np.random.seed(62654)
@@ -25,6 +25,7 @@ class ThreeTankDataGenerator():
         self.number_initial_states = number_initial_states
         self.initial_states = self.get_random_inition_states(N=number_initial_states)
         self.derivatives = derivatives
+        self.z_scaling_factor = 100
 
     def system_dynamics_function(self, x, t):
         x1 = x[0]
@@ -64,7 +65,7 @@ class ThreeTankDataGenerator():
         time = np.array(list(self.t)*self.number_initial_states)
         uid_initial_state = np.array([[i]*self.number_timesteps for i in range(self.number_initial_states)]).ravel()
         for i in range(self.number_initial_states):
-            z_i = self.solve_ode(self.initial_states[i,:]) / 100
+            z_i = self.solve_ode(self.initial_states[i,:]) / self.z_scaling_factor
             z_dot_i =  self.compute_derivatives(z_i, dt=self.t_max / (self.number_timesteps - 1))
             start_idx = i*self.number_timesteps
             end_idx = i*self.number_timesteps+self.number_timesteps

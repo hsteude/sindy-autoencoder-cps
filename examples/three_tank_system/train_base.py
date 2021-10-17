@@ -2,18 +2,18 @@ from examples.three_tank_system.data_module import ThreeTankDataModule
 from sindy_autoencoder_cps.lightning_module import SINDyAutoencoder
 import torch
 import pytorch_lightning as pl
-from sindy_autoencoder_cps.callbacks import SequentialThresholdingCallback 
+from sindy_autoencoder_cps.callbacks import SequentialThresholdingCallback
+# from sindy_autoencoder_cps.callbacks import SequentialLossWeightsCallback
 
 
 HPARAMS = dict(
-    learning_rate=1e-4,
+    learning_rate=1e-3,
     input_dim=3, 
     latent_dim=3,
-    enc_hidden_sizes=[1028, 512, 128, 64],
-    dec_hidden_sizes=[64, 128, 512, 1028],
+    enc_hidden_sizes=[512, 128, 64, 32],
+    dec_hidden_sizes=[33, 64, 128, 512],
     activation='tanh',
     debug=False,
-    number_candidate_functions=10,
     validdation_split=.1,
     batch_size=32,
     dl_num_workers=24,
@@ -27,12 +27,12 @@ HPARAMS = dict(
     sindy_sqrt=False,
     sindy_inverse=False,
     sindy_sign_sqrt_of_diff=True,
-    sequential_thresholding=True,
-    sequential_thresholding_freq = 2,
-    sequential_thresholding_thres = 0.01,
-    loss_weight_sindy_x=10,
-    loss_weight_sindy_z=10,
-    loss_weight_sindy_regularization=1e-4,
+    sequential_thresholding=False,
+    sequential_thresholding_freq = 5,
+    sequential_thresholding_thres = 0.05,
+    loss_weight_sindy_x=2e2,
+    loss_weight_sindy_z=1e1,
+    loss_weight_sindy_regularization=5e-5,
     dataset='base'
 )
 
@@ -40,11 +40,15 @@ def train():
     gpus = 1 if torch.cuda.is_available() else 0
     trainer = pl.Trainer(
         # track_grad_norm='inf',
-        gradient_clip_val=1,
+        gradient_clip_val=.1,
         gpus=gpus,
         max_epochs=10_000,
-        stochastic_weight_avg=True,
-        callbacks=[SequentialThresholdingCallback()])
+        deterministic=True,
+        precision=64,
+        # stochastic_weight_avg=True,
+        callbacks=[SequentialThresholdingCallback()
+                   # ,SequentialLossWeightsCallback()
+                   ])
     model = SINDyAutoencoder(**HPARAMS)
     dm = ThreeTankDataModule(validdation_split=HPARAMS['validdation_split'],
                              batch_size=HPARAMS['batch_size'],
