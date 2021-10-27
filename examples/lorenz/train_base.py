@@ -31,8 +31,8 @@ HPARAMS = dict(
     sequential_thresholding=False,
     sequential_thresholding_freq = 5,
     sequential_thresholding_thres = 0.05,
-    loss_weight_sindy_x=.5e-2,
-    loss_weight_sindy_z=5e-2,
+    loss_weight_sindy_x=0,
+    loss_weight_sindy_z=0,
     loss_weight_sindy_regularization=1e-8,
     # dataset='base'
 )
@@ -41,9 +41,9 @@ def train():
     gpus = 1 if torch.cuda.is_available() else 0
     trainer = pl.Trainer(
         # track_grad_norm='inf',
-        gradient_clip_val=10,
-        deterministic=True,
-        precision=16,
+        # gradient_clip_val=10,
+        # deterministic=True,
+        precision=64,
         gpus=gpus,
         max_epochs=10_000,
         callbacks=[SequentialThresholdingCallback()

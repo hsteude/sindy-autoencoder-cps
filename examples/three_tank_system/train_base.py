@@ -20,19 +20,19 @@ HPARAMS = dict(
     max_epochs=10_000,
     sindy_biases=True,
     sindy_states=True,
-    sindy_sin=False,
-    sindy_cos=False,
+    sindy_sin=True,
+    sindy_cos=True,
     sindy_multiply_pairs=True,
     sindy_poly_order=2,
     sindy_sqrt=False,
     sindy_inverse=False,
     sindy_sign_sqrt_of_diff=True,
-    sequential_thresholding=False,
-    sequential_thresholding_freq = 5,
+    sequential_thresholding=True,
+    sequential_thresholding_freq = 500,
     sequential_thresholding_thres = 0.05,
-    loss_weight_sindy_x=2e2,
-    loss_weight_sindy_z=1e1,
-    loss_weight_sindy_regularization=5e-5,
+    loss_weight_sindy_x=1e3,
+    loss_weight_sindy_z=1e2,
+    loss_weight_sindy_regularization=1e-4,
     dataset='base'
 )
 
@@ -40,7 +40,7 @@ def train():
     gpus = 1 if torch.cuda.is_available() else 0
     trainer = pl.Trainer(
         # track_grad_norm='inf',
-        gradient_clip_val=.1,
+        # gradient_clip_val=.1,
         gpus=gpus,
         max_epochs=10_000,
         deterministic=True,

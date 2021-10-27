@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import pytorch_lightning as pl
 from sindy_autoencoder_cps.sindy_library import SINDyLibrary
-pl.seed_everything(12354)
+pl.seed_everything(6542198)
 
 
 class Encoder(nn.Module):
@@ -23,8 +23,6 @@ class Encoder(nn.Module):
         out = self.activation(self.fc3(out))
         out = self.activation(self.fc4(out))
         out = self.fc5(out)
-        if any(torch.isnan(out.ravel())):
-            breakpoint()
         return out
 
     def initialize_weights(self):
@@ -129,7 +127,6 @@ class SINDyAutoencoder(pl.LightningModule):
         self.sequential_thresholding = sequential_thresholding
         self.sequential_thresholding_freq = sequential_thresholding_freq
         self.sequential_thresholding_thres = sequential_thresholding_thres
-        # TODO: here we got a device mess!
         self.XI_coefficient_mask = torch.ones((self.SINDyLibrary.number_candidate_functions, latent_dim),
                                               device='cuda:0')
 
@@ -155,7 +152,8 @@ class SINDyAutoencoder(pl.LightningModule):
             + self.loss_weight_sindy_regularization * sindy_regular_loss
         return loss, recon_loss, sindy_loss_x, sindy_loss_z, sindy_regular_loss
 
-    def compute_nn_derivates_wrt_time(self, y, ydot, weights_list, biases_list, activation='relu'):
+    def compute_nn_derivates_wrt_time(self, y, ydot, weights_list, biases_list,
+                                      activation='relu'):
         y_l = y
         ydot_l = ydot
         for l in range(len(weights_list) - 1):
@@ -164,7 +162,8 @@ class SINDyAutoencoder(pl.LightningModule):
             #  forward to get y_l for next layer
             if activation == 'relu':
                 y_l = torch.nn.ReLU()(hv)
-                # compute ydot for next layer l (this layer) using hv (so also y_l) and ydot_l
+                # compute ydot for next layer l (this layer)
+                # using hv (so also y_l) and ydot_l
                 ydot_l = (hv > 0).float() * \
                     torch.matmul(ydot_l, weights_list[l].T)
             elif activation == 'sigmoid':

@@ -1,7 +1,7 @@
 # data generation related
 NUMBER_TIMESTEPS = 50
 NUMBER_INITIAL_STATES = 100
-T_MAX = 5
+T_MAX = 20
 Q1 = 0
 Q3 = 0
 A = 10
