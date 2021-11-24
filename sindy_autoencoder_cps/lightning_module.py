@@ -76,7 +76,7 @@ class SINDyAutoencoder(pl.LightningModule):
                  sindy_sqrt=False,
                  sindy_inverse=False,
                  sindy_sign_sqrt_of_diff=True,
-                 XI_fill_val=.1,
+                 XI_fill_val=0.,
                  sequential_thresholding=True,
                  sequential_thresholding_freq=10,
                  sequential_thresholding_thres=1e-4,
@@ -134,51 +134,53 @@ class SINDyAutoencoder(pl.LightningModule):
         self.loss_weight_sindy_z = loss_weight_sindy_z
         self.loss_weight_sindy_regularization = loss_weight_sindy_regularization
         self.loss_names = ['total_loss', 'recon_loss',
-                           'sindy_loss_x', 'sindy_loss_z', 'sindy_regular_loss']
+                           'sindy_loss_x', 'sindy_loss_z', 'sindy_regular_loss', 'z_real_loss']
 
     def configure_optimizers(self):
         # , eps=self.adam_eps)
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         # return torch.optim.SGD(self.parameters(), lr=self.learning_rate)
 
-    def loss_function(self, x, xdot, x_hat, xdot_hat, zdot, zdot_hat, XI):
+    def loss_function(self, x, xdot, x_hat, xdot_hat, zdot, zdot_hat, XI, z, z_real):
         mse = nn.MSELoss()
+        z_real_loss = mse(z, z_real)
         recon_loss = mse(x, x_hat)
         sindy_loss_x = mse(xdot, xdot_hat)
         sindy_loss_z = mse(zdot, zdot_hat)
         sindy_regular_loss = torch.sum(torch.abs(XI))
         loss = recon_loss + self.loss_weight_sindy_x * sindy_loss_x \
             + self.loss_weight_sindy_z * sindy_loss_z \
-            + self.loss_weight_sindy_regularization * sindy_regular_loss
-        return loss, recon_loss, sindy_loss_x, sindy_loss_z, sindy_regular_loss
+            + self.loss_weight_sindy_regularization * sindy_regular_loss \
+            +0* z_real_loss
+        return loss, recon_loss, sindy_loss_x, sindy_loss_z, sindy_regular_loss + z_real_loss
 
-    def compute_nn_derivates_wrt_time(self, y, ydot, weights_list, biases_list,
-                                      activation='relu'):
-        y_l = y
-        ydot_l = ydot
-        for l in range(len(weights_list) - 1):
-            # help variable
-            hv = torch.matmul(y_l, weights_list[l].T) + biases_list[l]
-            #  forward to get y_l for next layer
-            if activation == 'relu':
-                y_l = torch.nn.ReLU()(hv)
-                # compute ydot for next layer l (this layer)
-                # using hv (so also y_l) and ydot_l
-                ydot_l = (hv > 0).float() * \
-                    torch.matmul(ydot_l, weights_list[l].T)
-            elif activation == 'sigmoid':
-                y_l = torch.nn.Sigmoid()(hv)
-                ydot_l = y_l * (1-y_l) * \
-                    torch.matmul(ydot_l, weights_list[l].T)
-            elif activation == 'tanh':
-                y_l = torch.nn.Tanh()(hv)
-                ydot_l = (1 - torch.square(torch.tanh(hv))) * \
-                    torch.matmul(ydot_l, weights_list[l].T)
-            elif activation == 'linear':
-                y_l = hv
-                ydot_l = torch.matmul(ydot_l, weights_list[l].T)
-        ydot_l = torch.matmul(ydot_l, weights_list[-1].T)
-        return ydot_l
+    def compute_nn_derivates_wrt_time(self, y, ydot, weights_list,
+                                      biases_list,
+                                      activation='sigmoid'):
+        input_l = y
+        d_input_l = ydot
+        if activation == 'sigmoid':
+            for l in range(len(weights_list)-1):
+                input_l = torch.matmul(input_l, weights_list[l].T) + biases_list[l]
+                input_l = torch.sigmoid(input_l)
+                d_input_l = torch.mul(
+                    torch.mul(input_l, 1-input_l), # outer
+                    torch.matmul(d_input_l,  #outer
+                                 weights_list[l].T) #inner
+                                      )
+            d_input_l = torch.matmul(d_input_l, weights_list[-1].T)
+
+        if activation == 'tanh':
+            for l in range(len(weights_list)-1):
+                input_l = torch.matmul(input_l, weights_list[l].T) + biases_list[l]
+                input_l = torch.tanh(input_l)
+                d_input_l = torch.mul(
+                    1-torch.square(torch.tanh(input_l)), # outer
+                    torch.matmul(d_input_l,  #outer
+                                 weights_list[l].T) #inner
+                                      )
+            d_input_l = torch.matmul(d_input_l, weights_list[-1].T)
+        return d_input_l
 
     def forward(self, x, xdot):
         return self._shared_eval(x, xdot)
@@ -204,19 +206,19 @@ class SINDyAutoencoder(pl.LightningModule):
         return x_hat, xdot_hat, z, zdot, zdot_hat
 
     def training_step(self, batch, batch_idx):
-        x, xdot, _ = batch
+        x, xdot, z_real, _, _ = batch
         x_hat, xdot_hat, z, zdot, zdot_hat = self._shared_eval(x, xdot)
         losses = self.loss_function(x=x, xdot=xdot, x_hat=x_hat, xdot_hat=xdot_hat,
-                                    zdot=zdot, zdot_hat=zdot_hat, XI=self.XI)
+                                    zdot=zdot, zdot_hat=zdot_hat, XI=self.XI,z=z, z_real=z_real)
         loss_dict = dict(zip([f'train_{n}' for n in self.loss_names], losses))
         self.logger.experiment.add_scalars("loss", loss_dict)
         return loss_dict['train_total_loss']
 
     def validation_step(self, batch, batch_idx):
-        x, xdot, _ = batch
+        x, xdot, z_real, _, _ = batch
         x_hat, xdot_hat, z, zdot, zdot_hat = self._shared_eval(x, xdot)
         losses = self.loss_function(x=x, xdot=xdot, x_hat=x_hat, xdot_hat=xdot_hat,
-                                    zdot=zdot, zdot_hat=zdot_hat, XI=self.XI)
+                                    zdot=zdot, zdot_hat=zdot_hat, XI=self.XI,z=z, z_real=z_real)
         loss_dict = dict(zip([f'val_{n}' for n in self.loss_names], losses))
         self.logger.experiment.add_scalars("loss", loss_dict)
         return loss_dict['val_total_loss']

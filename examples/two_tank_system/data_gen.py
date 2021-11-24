@@ -3,14 +3,14 @@
 """
 import numpy as np
 from scipy.integrate import odeint
-import examples.three_tank_system.constants as const
+import examples.two_tank_system.constants as const
 from scipy.ndimage import gaussian_filter
 from sklearn.preprocessing import PolynomialFeatures
 
 np.random.seed(62654)
 
 
-class ThreeTankDataGenerator():
+class TwoTankDataGenerator():
 
     def __init__(self, number_initial_states=2,
                  number_timesteps=const.NUMBER_TIMESTEPS, t_max=const.T_MAX,
@@ -32,14 +32,10 @@ class ThreeTankDataGenerator():
     def system_dynamics_function(self, x, t):
         x1 = x[0]
         x2 = x[1]
-        x3 = x[2]
         dh1_dt = self.C * self.q1 - self.C * \
             np.sign(x1 - x2) * np.sqrt(np.abs(x1 - x2))
-        dh2_dt = self.C * np.sign(x1 - x2) * np.sqrt(np.abs(x1 - x2))\
-            - self.C * np.sign(x2 - x3) * np.sqrt(np.abs(x2 - x3))
-        dh3_dt = self.C * self.q3 + self.C * \
-            np.sign(x2 - x3) * np.sqrt(np.abs(x2 - x3))
-        return dh1_dt, dh2_dt, dh3_dt
+        dh2_dt = self.C * np.sign(x1 - x2) * np.sqrt(np.abs(x1 - x2))
+        return dh1_dt, dh2_dt
 
     def get_random_inition_states(self, N):
         initial_states = np.array(np.random.uniform(low=const.INITIAL_LEVEL_MIN,
@@ -137,5 +133,5 @@ class TankPictureCreator():
 
 
 if __name__ == '__main__':
-    ttdg = ThreeTankDataGenerator()
+    ttdg = TwoTankDataGenerator()
     x, x_dot, time, uid_initial_state = ttdg.generate_x_space_data()

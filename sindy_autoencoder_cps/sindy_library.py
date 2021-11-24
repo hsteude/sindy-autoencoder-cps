@@ -75,7 +75,7 @@ class SINDyLibrary():
 
     @staticmethod
     def sqrt(z):
-        return torch.sqrt(z)
+        return torch.sign(z)*torch.sqrt(torch.abs(z))
 
     def sing_sqrt_diff_pairs(self, z):
         result = []

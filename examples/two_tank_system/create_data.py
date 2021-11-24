@@ -1,10 +1,10 @@
-from examples.three_tank_system.data_gen import ThreeTankDataGenerator
-import examples.three_tank_system.constants as const
+from examples.two_tank_system.data_gen import TwoTankDataGenerator
+import examples.two_tank_system.constants as const
 import pandas as pd
 
 
 def main():
-    ttdg = ThreeTankDataGenerator(
+    ttdg = TwoTankDataGenerator(
         number_initial_states=const.NUMBER_INITIAL_STATES,
         number_timesteps=const.NUMBER_TIMESTEPS,
         t_max=const.T_MAX,
